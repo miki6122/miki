@@ -45,3 +45,5 @@ python3 -m http.server 8080
 - чатові повідомлення/режими: `ai_messenger_state_v2`;
 - користувач: `ai_messenger_user_v1`;
 - адмін: `ai_messenger_admin_user_v1` + сесія.
+
+Для сумісності з попередньою версією застосунку автоматично читається старий ключ `ai_messenger_state_v1`, якщо новий ще не створено.

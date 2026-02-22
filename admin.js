@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'ai_messenger_state_v2';
+const LEGACY_STORAGE_KEY = 'ai_messenger_state_v1';
 const ADMIN_GATE_KEY = 'ai_messenger_gate_v1';
 const ADMIN_USER_KEY = 'ai_messenger_admin_user_v1';
 const ADMIN_SESSION_KEY = 'ai_messenger_admin_session_v1';
@@ -35,7 +36,13 @@ function hashPassword(value) {
 
 function loadState() {
   try {
-    return { ...defaultState, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') };
+    const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (current) return { ...defaultState, ...current };
+
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || 'null');
+    if (legacy) return { ...defaultState, ...legacy, users: legacy.users || {} };
+
+    return { ...defaultState };
   } catch {
     return { ...defaultState };
   }
@@ -88,7 +95,17 @@ function showDashboard() {
 
 function guardAccess() {
   if (!isAllowedBySecretGate()) {
-    document.body.innerHTML = '<div class="app-shell"><main class="chat-card"><h2>403</h2><p>Сторінка недоступна.</p></main></div>';
+    const shell = document.createElement('div');
+    shell.className = 'app-shell';
+    const card = document.createElement('main');
+    card.className = 'chat-card';
+    const title = document.createElement('h2');
+    title.textContent = '403';
+    const message = document.createElement('p');
+    message.textContent = 'Сторінка недоступна.';
+    card.append(title, message);
+    shell.appendChild(card);
+    document.body.replaceChildren(shell);
     return;
   }
 
@@ -114,13 +131,24 @@ function renderUsers(state) {
     const pendingCount = state.pendingForAdmin.filter((item) => item.userId === userId).length;
     const li = document.createElement('li');
     li.className = `user-row ${activeUserId === userId ? 'active' : ''}`;
-    li.innerHTML = `
-      <button type="button" data-user-id="${userId}" class="user-nav-btn">
-        <strong>${userName}</strong>
-        <span class="meta">id: ${userId.slice(0, 8)}...</span>
-        <span class="badge">Нові: ${pendingCount}</span>
-      </button>
-    `;
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.dataset.userId = userId;
+    button.className = 'user-nav-btn';
+
+    const strong = document.createElement('strong');
+    strong.textContent = userName;
+
+    const meta = document.createElement('span');
+    meta.className = 'meta';
+    meta.textContent = `id: ${userId.slice(0, 8)}...`;
+
+    const badge = document.createElement('span');
+    badge.className = 'badge';
+    badge.textContent = `Нові: ${pendingCount}`;
+
+    button.append(strong, meta, badge);
+    li.appendChild(button);
     userListEl.appendChild(li);
   });
 }
@@ -148,7 +176,15 @@ function renderConversation(state) {
   messages.forEach((msg) => {
     const box = document.createElement('div');
     box.className = `message ${msg.role === 'user' ? 'user' : msg.role}`;
-    box.innerHTML = `<div class="meta">${msg.role.toUpperCase()} • ${formatTime(msg.createdAt)}</div><div>${msg.text}</div>`;
+
+    const meta = document.createElement('div');
+    meta.className = 'meta';
+    meta.textContent = `${msg.role.toUpperCase()} • ${formatTime(msg.createdAt)}`;
+
+    const text = document.createElement('div');
+    text.textContent = msg.text;
+
+    box.append(meta, text);
     conversationEl.appendChild(box);
   });
 
@@ -232,7 +268,10 @@ adminFormEl.addEventListener('submit', (event) => {
     createdAt: new Date().toISOString(),
   });
 
-  state.pendingForAdmin = state.pendingForAdmin.filter((item) => item.userId !== activeUserId);
+  const pendingIndex = state.pendingForAdmin.findIndex((item) => item.userId === activeUserId);
+  if (pendingIndex >= 0) {
+    state.pendingForAdmin.splice(pendingIndex, 1);
+  }
   saveState(state);
   render(state);
   adminMessageEl.value = '';

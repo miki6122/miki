@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'ai_messenger_state_v2';
+const LEGACY_STORAGE_KEY = 'ai_messenger_state_v1';
 const USER_KEY = 'ai_messenger_user_v1';
 const ADMIN_GATE_KEY = 'ai_messenger_gate_v1';
 
@@ -24,7 +25,13 @@ let currentUser = JSON.parse(localStorage.getItem(USER_KEY) || 'null');
 
 function loadState() {
   try {
-    return { ...defaultState, ...JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') };
+    const current = JSON.parse(localStorage.getItem(STORAGE_KEY) || 'null');
+    if (current) return { ...defaultState, ...current };
+
+    const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || 'null');
+    if (legacy) return { ...defaultState, ...legacy, users: legacy.users || {} };
+
+    return { ...defaultState };
   } catch {
     return { ...defaultState };
   }
@@ -45,6 +52,10 @@ function formatTime(iso) {
 function ensureUser(state) {
   if (!currentUser) return;
   state.users[currentUser.id] = currentUser.name;
+}
+
+function findExistingUserIdByName(state, name) {
+  return Object.entries(state.users).find(([, userName]) => userName === name)?.[0] || null;
 }
 
 function humanAIReply(text, name) {
@@ -113,10 +124,10 @@ registerFormEl.addEventListener('submit', (event) => {
   const name = nameInputEl.value.trim();
   if (name.length < 2) return;
 
-  currentUser = { id: `u_${crypto.randomUUID()}`, name };
-  localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
-
   const state = loadState();
+  const existingId = findExistingUserIdByName(state, name);
+  currentUser = { id: existingId || `u_${crypto.randomUUID()}`, name };
+  localStorage.setItem(USER_KEY, JSON.stringify(currentUser));
   ensureUser(state);
   saveState(state);
   renderMessages(state);
