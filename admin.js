@@ -69,7 +69,11 @@ function loadState() {
     if (current) return { ...defaultState, ...current };
 
     const legacy = JSON.parse(localStorage.getItem(LEGACY_STORAGE_KEY) || 'null');
-    if (legacy) return { ...defaultState, ...legacy, users: legacy.users || {} };
+    if (legacy) {
+      const migrated = { ...defaultState, ...legacy, users: legacy.users || {} };
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
 
     return { ...defaultState };
   } catch {
