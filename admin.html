@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Messenger • Admin</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell admin-shell">
+      <header>
+        <h1>Admin Panel</h1>
+        <p>Керування відповідями для користувачів.</p>
+      </header>
+
+      <main class="chat-card">
+        <section class="admin-controls">
+          <label class="toggle">
+            <input id="manual-toggle" type="checkbox" />
+            <span>Ручні відповіді від адміна (замість AI)</span>
+          </label>
+          <p id="mode-label" class="mode-label">Поточний режим: AI відповідає автоматично</p>
+        </section>
+
+        <section>
+          <h2>Вхідні повідомлення</h2>
+          <ul id="inbox" class="inbox"></ul>
+        </section>
+
+        <form id="admin-form" class="composer">
+          <select id="target-user" required>
+            <option value="" disabled selected>Оберіть користувача</option>
+          </select>
+          <input id="admin-message" type="text" placeholder="Відповідь користувачу" required />
+          <button type="submit">Відправити</button>
+        </form>
+
+        <a href="index.html">← Назад до чату</a>
+      </main>
+    </div>
+
+    <script src="admin.js"></script>
+  </body>
+</html>
