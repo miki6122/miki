@@ -105,7 +105,8 @@ header p {
 .composer input,
 .composer button,
 .stack-form input,
-.stack-form button {
+.stack-form button,
+.inbox-tools input {
   border-radius: 10px;
   border: 1px solid #cbd5e1;
   padding: 10px 12px;
@@ -179,6 +180,22 @@ header p {
 
 .admin-panel.active {
   display: block;
+}
+
+.inbox-tools {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.compact-toggle {
+  font-size: 14px;
+  color: var(--text);
+  display: flex;
+  gap: 6px;
+  align-items: center;
 }
 
 .inbox {

@@ -3,6 +3,8 @@ const LEGACY_STORAGE_KEY = 'ai_messenger_state_v1';
 const ADMIN_GATE_KEY = 'ai_messenger_gate_v1';
 const ADMIN_USER_KEY = 'ai_messenger_admin_user_v1';
 const ADMIN_SESSION_KEY = 'ai_messenger_admin_session_v1';
+const ADMIN_ATTEMPTS_KEY = 'ai_messenger_admin_attempts_v1';
+const ADMIN_LOCK_UNTIL_KEY = 'ai_messenger_admin_lock_until_v1';
 
 const defaultState = {
   manualMode: false,
@@ -27,11 +29,38 @@ const conversationEl = document.getElementById('admin-conversation');
 const adminFormEl = document.getElementById('admin-form');
 const adminMessageEl = document.getElementById('admin-message');
 const logoutAdminEl = document.getElementById('logout-admin');
+const userSearchEl = document.getElementById('user-search');
+const onlyPendingEl = document.getElementById('only-pending');
 
 let activeUserId = null;
 
-function hashPassword(value) {
-  return btoa(unescape(encodeURIComponent(value)));
+function getAttempts() {
+  return Number(sessionStorage.getItem(ADMIN_ATTEMPTS_KEY) || '0');
+}
+
+function setAttempts(value) {
+  sessionStorage.setItem(ADMIN_ATTEMPTS_KEY, String(value));
+}
+
+function getLockRemainingMs() {
+  const lockUntil = Number(sessionStorage.getItem(ADMIN_LOCK_UNTIL_KEY) || '0');
+  return Math.max(0, lockUntil - Date.now());
+}
+
+function lockLogin() {
+  sessionStorage.setItem(ADMIN_LOCK_UNTIL_KEY, String(Date.now() + 60_000));
+  setAttempts(0);
+}
+
+async function sha256(text) {
+  const bytes = new TextEncoder().encode(text);
+  const digest = await crypto.subtle.digest('SHA-256', bytes);
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function hashPassword(value) {
+  const safeValue = `miki::admin::${value}`;
+  return sha256(safeValue);
 }
 
 function loadState() {
@@ -83,7 +112,13 @@ function showAuth() {
   } else {
     registerWrapEl.classList.add('hidden');
     loginWrapEl.classList.remove('hidden');
-    authStatusEl.textContent = 'Увійдіть під даними адміністратора.';
+
+    const lockMs = getLockRemainingMs();
+    if (lockMs > 0) {
+      authStatusEl.textContent = `Забагато невдалих спроб. Повторіть через ${Math.ceil(lockMs / 1000)} сек.`;
+    } else {
+      authStatusEl.textContent = 'Увійдіть під даними адміністратора.';
+    }
   }
 }
 
@@ -119,18 +154,28 @@ function guardAccess() {
 function renderUsers(state) {
   userListEl.innerHTML = '';
 
-  const users = Object.entries(state.users);
+  const query = userSearchEl.value.trim().toLowerCase();
+  const onlyPending = onlyPendingEl.checked;
+
+  const users = Object.entries(state.users)
+    .map(([userId, userName]) => {
+      const pendingCount = state.pendingForAdmin.filter((item) => item.userId === userId).length;
+      return { userId, userName, pendingCount };
+    })
+    .filter((user) => (!query ? true : user.userName.toLowerCase().includes(query)))
+    .filter((user) => (!onlyPending ? true : user.pendingCount > 0));
+
   if (!users.length) {
     const li = document.createElement('li');
-    li.textContent = 'Користувачів поки немає.';
+    li.textContent = 'Немає користувачів за поточним фільтром.';
     userListEl.appendChild(li);
     return;
   }
 
-  users.forEach(([userId, userName]) => {
-    const pendingCount = state.pendingForAdmin.filter((item) => item.userId === userId).length;
+  users.forEach(({ userId, userName, pendingCount }) => {
     const li = document.createElement('li');
     li.className = `user-row ${activeUserId === userId ? 'active' : ''}`;
+
     const button = document.createElement('button');
     button.type = 'button';
     button.dataset.userId = userId;
@@ -201,30 +246,53 @@ function render(state) {
   renderConversation(state);
 }
 
-adminRegisterFormEl.addEventListener('submit', (event) => {
+adminRegisterFormEl.addEventListener('submit', async (event) => {
   event.preventDefault();
   const login = document.getElementById('new-admin-login').value.trim();
   const password = document.getElementById('new-admin-password').value;
-  if (login.length < 3 || password.length < 6) return;
+  if (login.length < 3 || password.length < 8) return;
 
-  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify({ login, passwordHash: hashPassword(password) }));
+  const passwordHash = await hashPassword(password);
+  localStorage.setItem(ADMIN_USER_KEY, JSON.stringify({ login, passwordHash, hashVersion: 'sha256-v1' }));
   sessionStorage.setItem(ADMIN_SESSION_KEY, 'ok');
+  setAttempts(0);
+  sessionStorage.removeItem(ADMIN_LOCK_UNTIL_KEY);
   showDashboard();
 });
 
-adminLoginFormEl.addEventListener('submit', (event) => {
+adminLoginFormEl.addEventListener('submit', async (event) => {
   event.preventDefault();
+
+  const lockMs = getLockRemainingMs();
+  if (lockMs > 0) {
+    authStatusEl.textContent = `Забагато невдалих спроб. Повторіть через ${Math.ceil(lockMs / 1000)} сек.`;
+    return;
+  }
+
   const login = document.getElementById('admin-login').value.trim();
   const password = document.getElementById('admin-password').value;
   const saved = getAdminRecord();
-
   if (!saved) return;
 
-  if (saved.login === login && saved.passwordHash === hashPassword(password)) {
+  const passwordHash = await hashPassword(password);
+  const valid = saved.login === login && saved.passwordHash === passwordHash;
+
+  if (valid) {
     sessionStorage.setItem(ADMIN_SESSION_KEY, 'ok');
+    setAttempts(0);
+    sessionStorage.removeItem(ADMIN_LOCK_UNTIL_KEY);
     showDashboard();
+    return;
+  }
+
+  const nextAttempts = getAttempts() + 1;
+  setAttempts(nextAttempts);
+
+  if (nextAttempts >= 5) {
+    lockLogin();
+    authStatusEl.textContent = 'Забагато невдалих спроб. Вхід заблоковано на 60 секунд.';
   } else {
-    authStatusEl.textContent = 'Невірний логін або пароль.';
+    authStatusEl.textContent = `Невірний логін або пароль. Спроба ${nextAttempts}/5.`;
   }
 });
 
@@ -240,6 +308,9 @@ manualToggleEl.addEventListener('change', () => {
   saveState(state);
   render(state);
 });
+
+userSearchEl.addEventListener('input', () => render(loadState()));
+onlyPendingEl.addEventListener('change', () => render(loadState()));
 
 userListEl.addEventListener('click', (event) => {
   const target = event.target.closest('[data-user-id]');
@@ -269,9 +340,8 @@ adminFormEl.addEventListener('submit', (event) => {
   });
 
   const pendingIndex = state.pendingForAdmin.findIndex((item) => item.userId === activeUserId);
-  if (pendingIndex >= 0) {
-    state.pendingForAdmin.splice(pendingIndex, 1);
-  }
+  if (pendingIndex >= 0) state.pendingForAdmin.splice(pendingIndex, 1);
+
   saveState(state);
   render(state);
   adminMessageEl.value = '';

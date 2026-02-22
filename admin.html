@@ -19,7 +19,7 @@
             <h2>Створення адмін-акаунту</h2>
             <form id="admin-register-form" class="stack-form">
               <input id="new-admin-login" type="text" placeholder="Логін" required minlength="3" />
-              <input id="new-admin-password" type="password" placeholder="Пароль" required minlength="6" />
+              <input id="new-admin-password" type="password" placeholder="Пароль" required minlength="8" />
               <button type="submit">Зареєструвати адміна</button>
             </form>
           </div>
@@ -45,6 +45,10 @@
 
           <section data-panel="inbox" class="admin-panel active">
             <h2>Користувачі та нові запити</h2>
+            <div class="inbox-tools">
+              <input id="user-search" type="search" placeholder="Пошук користувача" />
+              <label class="compact-toggle"><input id="only-pending" type="checkbox" /> Тільки з новими</label>
+            </div>
             <ul id="user-list" class="inbox"></ul>
           </section>
 
