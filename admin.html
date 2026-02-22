@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Control Room</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell admin-shell">
+      <header>
+        <h1>Control Room</h1>
+        <p>Прихована панель оператора для ручних відповідей.</p>
+      </header>
+
+      <main class="chat-card">
+        <section id="auth-section" class="auth-section">
+          <div id="register-admin-wrap" class="hidden">
+            <h2>Створення адмін-акаунту</h2>
+            <form id="admin-register-form" class="stack-form">
+              <input id="new-admin-login" type="text" placeholder="Логін" required minlength="3" />
+              <input id="new-admin-password" type="password" placeholder="Пароль" required minlength="6" />
+              <button type="submit">Зареєструвати адміна</button>
+            </form>
+          </div>
+
+          <div id="login-admin-wrap" class="hidden">
+            <h2>Вхід у панель</h2>
+            <form id="admin-login-form" class="stack-form">
+              <input id="admin-login" type="text" placeholder="Логін" required />
+              <input id="admin-password" type="password" placeholder="Пароль" required />
+              <button type="submit">Увійти</button>
+            </form>
+          </div>
+          <p id="auth-status" class="meta"></p>
+        </section>
+
+        <section id="dashboard" class="hidden">
+          <nav class="admin-top-nav">
+            <button type="button" data-tab="inbox" class="tab-btn active">Inbox</button>
+            <button type="button" data-tab="conversation" class="tab-btn">Діалог</button>
+            <button type="button" data-tab="settings" class="tab-btn">Налаштування</button>
+            <button id="logout-admin" type="button" class="secondary-btn">Вийти</button>
+          </nav>
+
+          <section data-panel="inbox" class="admin-panel active">
+            <h2>Користувачі та нові запити</h2>
+            <ul id="user-list" class="inbox"></ul>
+          </section>
+
+          <section data-panel="conversation" class="admin-panel">
+            <h2>Діалог з користувачем</h2>
+            <p id="active-user-label" class="meta">Оберіть користувача у вкладці Inbox.</p>
+            <div id="admin-conversation" class="messages compact"></div>
+            <form id="admin-form" class="composer">
+              <input id="admin-message" type="text" placeholder="Відповідь користувачу" required />
+              <button type="submit">Відправити</button>
+            </form>
+          </section>
+
+          <section data-panel="settings" class="admin-panel">
+            <h2>Режим відповідей</h2>
+            <label class="toggle">
+              <input id="manual-toggle" type="checkbox" />
+              <span>Ручні відповіді від адміна (замість AI)</span>
+            </label>
+            <p id="mode-label" class="mode-label">Поточний режим: AI відповідає автоматично</p>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

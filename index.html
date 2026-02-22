@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Messenger</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header>
+        <h1>AI Messenger</h1>
+        <p>Спілкуйся з AI, який відповідає природно як реальна людина.</p>
+      </header>
+
+      <main class="chat-card" aria-live="polite">
+        <section id="registration" class="registration-panel">
+          <h2>Реєстрація користувача</h2>
+          <form id="register-form" class="composer single-line">
+            <input id="name-input" type="text" placeholder="Ваше ім'я" required minlength="2" />
+            <button type="submit">Увійти в чат</button>
+          </form>
+          <p class="meta">Ім'я потрібно, щоб адміністратор міг бачити, кому відповідати.</p>
+        </section>
+
+        <section id="chat-section" class="hidden">
+          <div class="chat-topbar">
+            <div>
+              <strong id="user-badge"></strong>
+              <p class="meta">Напишіть повідомлення — AI відповість у людському стилі.</p>
+            </div>
+            <button id="logout-user" class="secondary-btn" type="button">Змінити користувача</button>
+          </div>
+
+          <div id="messages" class="messages"></div>
+
+          <form id="chat-form" class="composer">
+            <input
+              id="message-input"
+              type="text"
+              placeholder="Напишіть повідомлення..."
+              autocomplete="off"
+              required
+            />
+            <button type="submit">Надіслати</button>
+          </form>
+        </section>
+      </main>
+    </div>
+
+    <button id="secret-admin-trigger" aria-label="hidden admin access"></button>
+
+    <script src="app.js"></script>
+  </body>
+</html>
