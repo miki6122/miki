@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Messenger</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header>
+        <h1>AI Messenger</h1>
+        <p>Спілкуйся з AI або підключи живого адміністратора.</p>
+      </header>
+
+      <main class="chat-card" aria-live="polite">
+        <div id="messages" class="messages"></div>
+
+        <form id="chat-form" class="composer">
+          <input
+            id="message-input"
+            type="text"
+            placeholder="Напишіть повідомлення..."
+            autocomplete="off"
+            required
+          />
+          <button type="submit">Надіслати</button>
+        </form>
+
+        <div class="note">
+          <p>
+            Якщо адміністратор увімкне ручний режим, AI тимчасово перестане відповідати,
+            і відповідь надаватиме людина.
+          </p>
+          <a href="admin.html">Перейти в адмін-панель</a>
+        </div>
+      </main>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
